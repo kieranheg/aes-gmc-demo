@@ -1,10 +1,13 @@
 package com.muscy;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muscy.encryption.AesGcmEncryption;
 import com.muscy.encryption.Encryption;
 import com.muscy.models.Car;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Base64;
 
 import static junit.framework.TestCase.assertEquals;
@@ -42,9 +45,22 @@ public class Encryption_UT {
         
         byte[] encryptedMake = aes.encrypt(ENCRYPTION_KEY_CAR, car.getMake());
         String base64EncodedMake = Base64.getEncoder().encodeToString(encryptedMake);
-        
         byte[] base64DecodedMake = Base64.getDecoder().decode(base64EncodedMake);
         assertEquals(car.getMake(), getDecryptedString(ENCRYPTION_KEY_CAR, base64DecodedMake));
+    }
+    
+    @Test
+    public void testEncryptionOfCarObjectWithStringsSerialized() throws IOException {
+        // Requires @NoArgsConstructor on Car
+        Car car = Car.builder().make("Honda").model("Civic").year("2005").build();
+        ObjectMapper objectMapper = new ObjectMapper();
+        String serializedCar = objectMapper.writeValueAsString(car);
+        
+        byte[] encryptedCar = aes.encrypt(ENCRYPTION_KEY_CAR, serializedCar);
+        String decryptedCarString = getDecryptedString(ENCRYPTION_KEY_CAR, encryptedCar);
+        
+        Car deserializedCar = objectMapper.readValue(decryptedCarString, Car.class);
+        assertEquals(car, deserializedCar);
     }
     
     private String getDecryptedString(final String key, final byte[] encryptedData) {
