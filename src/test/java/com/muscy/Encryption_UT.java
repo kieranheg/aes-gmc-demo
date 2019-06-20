@@ -1,6 +1,5 @@
 package com.muscy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muscy.encryption.AesGcmEncryption;
 import com.muscy.encryption.Encryption;
@@ -27,7 +26,7 @@ public class Encryption_UT {
     }
     
     @Test
-    public void testEncryptionOfCarObject() {
+    public void testEncryptionOfCarObjectFieldByField() {
         Car car = Car.builder().make("Honda").model("Civic").year("2005").build();
     
         byte[] encryptedMake = aes.encrypt(ENCRYPTION_KEY_CAR, car.getMake());
@@ -40,7 +39,7 @@ public class Encryption_UT {
     }
     
     @Test
-    public void testEncryptionOfCarObjectWithBase64Strings() {
+    public void testEncryptionOfCarObjectConvertedToBase64String() {
         Car car = Car.builder().make("Honda").model("Civic").year("2005").build();
         
         byte[] encryptedMake = aes.encrypt(ENCRYPTION_KEY_CAR, car.getMake());
@@ -50,7 +49,7 @@ public class Encryption_UT {
     }
     
     @Test
-    public void testEncryptionOfCarObjectWithStringsSerialized() throws IOException {
+    public void testEncryptionOfSerializedCarObject() throws IOException {
         // Requires @NoArgsConstructor on Car
         Car car = Car.builder().make("Honda").model("Civic").year("2005").build();
         ObjectMapper objectMapper = new ObjectMapper();
@@ -58,6 +57,23 @@ public class Encryption_UT {
         
         byte[] encryptedCar = aes.encrypt(ENCRYPTION_KEY_CAR, serializedCar);
         String decryptedCarString = getDecryptedString(ENCRYPTION_KEY_CAR, encryptedCar);
+        
+        Car deserializedCar = objectMapper.readValue(decryptedCarString, Car.class);
+        assertEquals(car, deserializedCar);
+    }
+    
+    @Test
+    public void testEncryptionOfSerializedCarObjectConvertedToBase64String() throws IOException {
+        // Requires @NoArgsConstructor on Car
+        Car car = Car.builder().make("Honda").model("Civic").year("2005").build();
+        ObjectMapper objectMapper = new ObjectMapper();
+        String serializedCar = objectMapper.writeValueAsString(car);
+        
+        byte[] encryptedCar = aes.encrypt(ENCRYPTION_KEY_CAR, serializedCar);
+        String base64EncodedCar = Base64.getEncoder().encodeToString(encryptedCar);
+    
+        byte[] base64DecodedCar = Base64.getDecoder().decode(base64EncodedCar);
+        String decryptedCarString = getDecryptedString(ENCRYPTION_KEY_CAR, base64DecodedCar);
         
         Car deserializedCar = objectMapper.readValue(decryptedCarString, Car.class);
         assertEquals(car, deserializedCar);
